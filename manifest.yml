@@ -1,10 +1,10 @@
 applications:
 - path: .
-  memory: 256M
+  memory: 256K
   instances: 1
   domain: mybluemix.net
-  name: watsonwork-sentiment
-  host: watsonwork-sentiment
-  disk_quota: 1024M
+  name: sentiment-jarusso
+  host: sentiment-jarusso
+  disk_quota: 256K
   env:
    ENABLE_BLUEMIX_DEV_MODE: "false"
