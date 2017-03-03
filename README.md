@@ -1,6 +1,8 @@
 # watsonwork-sentiment analyzer
 **Writes a message back if there is someone with very negative or very positive comments**
 
+[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/jarusso/watsonwork-sentiment&branch=master)
+
 ### Demonstrates the following specific Watson Work Services capabilities
 
 1. How to listen to events in a Watson Work Space, specifically it knows how to process message annotation added events and thus requires that apps registered are enabled with those events.
