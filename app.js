@@ -108,7 +108,6 @@ app.post("/webhook_callback", function(req, res) {
     } else {
       // If the person is neither happy nor sad then assume neutral and just return
       msgText = " is neutral " + " (" + docSentiment.score + ")";
-      return;
     }
   } else {
       // Skip analysis we are not interested in
