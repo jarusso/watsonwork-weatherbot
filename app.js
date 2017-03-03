@@ -49,7 +49,8 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 app.post("/webhook_callback", function(req, res) {
-
+  
+  console.log("######## got a callback ########");
 
   if (!APP_ID || !APP_SECRET || !WEBHOOK_SECRET) {
   	console.log("ERROR: Missing variables APP_ID, APP_SECRET or WEBHOOK_SECRET from environment");
