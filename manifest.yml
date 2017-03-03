@@ -3,8 +3,8 @@ applications:
   memory: 256M
   instances: 1
   domain: mybluemix.net
-  name: sentiment-jarusso
-  host: sentiment-jarusso
+  name: sentiment-jarusso-x
+  host: sentiment-jarusso-x
   disk_quota: 256M
   env:
    ENABLE_BLUEMIX_DEV_MODE: "false"
