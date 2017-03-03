@@ -102,11 +102,12 @@ app.post("/webhook_callback", function(req, res) {
     var docSentiment = annotationPayload.docSentiment;
     msgTitle = "Sentiment Analysis";
     if (docSentiment.type === "negative" && docSentiment.score < -0.50) {
-      msgText = " is being " + nterm() + " (" + docSentiment.score + ")";
+      msgText = " is being " + negativeTerm() + " (" + docSentiment.score + ")";
     } else if (docSentiment.type === "positive" && docSentiment.score > 0.50) {
-      msgText = " is being " + pterm() + " (" + docSentiment.score + ")";
+      msgText = " is being " + positiveTerm() + " (" + docSentiment.score + ")";
     } else {
       // If the person is neither happy nor sad then assume neutral and just return
+      msgText = " is neutral " + " (" + docSentiment.score + ")";
       return;
     }
   } else {
