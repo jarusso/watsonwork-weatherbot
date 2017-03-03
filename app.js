@@ -101,9 +101,9 @@ app.post("/webhook_callback", function(req, res) {
     var docSentiment = annotationPayload.docSentiment;
     msgTitle = "Sentiment Analysis";
     if (docSentiment.type === "negative" && docSentiment.score < -0.50) {
-      msgText = " is being negative (" + docSentiment.score + ")";
+      msgText = " is being " + nterm() + " (" + docSentiment.score + ")";
     } else if (docSentiment.type === "positive" && docSentiment.score > 0.50) {
-      msgText = " seems very happy ! (" + docSentiment.score + ")";
+      msgText = " is being " + pterm() + " (" + docSentiment.score + ")";
     } else {
       // If the person is neither happy nor sad then assume neutral and just return
       return;
@@ -210,7 +210,32 @@ app.post("/webhook_callback", function(req, res) {
   });
 });
 
+function negativeTerm()
+{
+	var nterm = ["adverse","gloomy","pessimistic","unfavorable","abrogating","annulling","anti","contrary",
+		     "contravening","denying","disallowing","disavowing","dissenting",
+		     "gainsaying","jaundiced","naysaying","opposing","recusant","rejecting",
+		     "resisting","antagonistic","balky","colorless","counteractive","cynical","detrimental","dissentient"
+		    ];
+	var high = nterm.length - 1;
+	var low = 0;
+	var returnTerm = nterm[Math.floor(Math.random() * (high - low + 1) + low)];
+	return returnTerm;
+}
 
+function positiveTerm()
+{
+	var pterm = ["cheerful","contented","delighted","ecstatic","elated","glad","joyful","joyous","jubilant",
+		     "lively","merry","overjoyed","peaceful","pleasant","pleased","thrilled","upbeat","blessed",
+		     "blest","blissful","blithe","chipper","chirpy","content","convivial","exultant”,”gleeful",
+		     "gratified","intoxicated","jolly","laughing","light","looking good","mirthful","on cloud nine",
+		     "peppy","perky","playful","sparkling","sunny","tickled","tickled pink","up","walking on air"
+		    ];
+	var high = pterm.length - 1;
+	var low = 0;
+	var returnTerm = pterm[Math.floor(Math.random() * (high - low + 1) + low)];
+	return returnTerm;
+}
 
 function verifySender(headers, rawbody) {
     var headerToken = headers[WEBHOOK_VERIFICATION_TOKEN_HEADER];
