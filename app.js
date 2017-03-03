@@ -210,6 +210,8 @@ app.post("/webhook_callback", function(req, res) {
   });
 });
 
+// extra flare
+
 function negativeTerm()
 {
 	var nterm = ["adverse","gloomy","pessimistic","unfavorable","abrogating","annulling","anti","contrary",
