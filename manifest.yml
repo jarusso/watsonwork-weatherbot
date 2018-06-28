@@ -3,8 +3,8 @@ applications:
   memory: 256M
   instances: 1
   domain: mybluemix.net
-  name: weatherbot
-  host: weatherbot
+  name: weatherbotj
+  host: weatherbotj
   disk_quota: 256M
   env:
    ENABLE_BLUEMIX_DEV_MODE: "false"
