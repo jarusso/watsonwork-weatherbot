@@ -48,7 +48,7 @@ app.listen(process.env.PORT || 3000, () => {
   console.log("INFO: app is listening on port: " + (process.env.PORT || 3000));
 });
 
-app.post("/webhook_callback", function(req, res) {
+app.post("/weatherbot", function(req, res) {
   
   console.log("######## got a callback ########");
 
@@ -97,22 +97,25 @@ app.post("/webhook_callback", function(req, res) {
   const annotationType = body.annotationType;
   var messageId = body.messageId;
   var annotationPayload = JSON.parse(body.annotationPayload);
+	
+  msgTitle = "Annotation is ===";
+  msgText = annotationType;
 
-  if (annotationType === "message-nlp-docSentiment") {
-    var docSentiment = annotationPayload.docSentiment;
-    msgTitle = "Sentiment Analysis";
-    if (docSentiment.type === "negative" && docSentiment.score < -0.50) {
-      msgText = " is being " + negativeTerm() + " (" + docSentiment.score + ")";
-    } else if (docSentiment.type === "positive" && docSentiment.score > 0.50) {
-      msgText = " is being " + positiveTerm() + " (" + docSentiment.score + ")";
-    } else {
+  //if (annotationType === "message-nlp-docSentiment") {
+  //  var docSentiment = annotationPayload.docSentiment;
+  //  msgTitle = "Sentiment Analysis";
+  //  if (docSentiment.type === "negative" && docSentiment.score < -0.50) {
+  //    msgText = " is being " + negativeTerm() + " (" + docSentiment.score + ")";
+  //  } else if (docSentiment.type === "positive" && docSentiment.score > 0.50) {
+  //    msgText = " is being " + positiveTerm() + " (" + docSentiment.score + ")";
+  //  } else {
       // If the person is neither happy nor sad then assume neutral and just return
-      msgText = " is neutral " + " (" + docSentiment.score + ")";
-    }
-  } else {
+  //    msgText = " is neutral " + " (" + docSentiment.score + ")";
+  //  }
+  //} else {
       // Skip analysis we are not interested in
-      return;
-  }
+      //return;
+  //}
 
   // Build request options for authentication.
   const authenticationOptions = {
@@ -210,35 +213,6 @@ app.post("/webhook_callback", function(req, res) {
     });
   });
 });
-
-// extra flare
-
-function negativeTerm()
-{
-	var nterm = ["adverse","gloomy","pessimistic","unfavorable","abrogating","annulling","anti","contrary",
-		     "contravening","denying","disallowing","disavowing","dissenting",
-		     "gainsaying","jaundiced","naysaying","opposing","recusant","rejecting",
-		     "resisting","antagonistic","balky","colorless","counteractive","cynical","detrimental","dissentient"
-		    ];
-	var high = nterm.length - 1;
-	var low = 0;
-	var returnTerm = nterm[Math.floor(Math.random() * (high - low + 1) + low)];
-	return returnTerm;
-}
-
-function positiveTerm()
-{
-	var pterm = ["cheerful","contented","delighted","ecstatic","elated","glad","joyful","joyous","jubilant",
-		     "lively","merry","overjoyed","peaceful","pleasant","pleased","thrilled","upbeat","blessed",
-		     "blest","blissful","blithe","chipper","chirpy","content","convivial","exultant”,”gleeful",
-		     "gratified","intoxicated","jolly","laughing","light","looking good","mirthful","on cloud nine",
-		     "peppy","perky","playful","sparkling","sunny","tickled","tickled pink","up","walking on air"
-		    ];
-	var high = pterm.length - 1;
-	var low = 0;
-	var returnTerm = pterm[Math.floor(Math.random() * (high - low + 1) + low)];
-	return returnTerm;
-}
 
 function verifySender(headers, rawbody) {
     var headerToken = headers[WEBHOOK_VERIFICATION_TOKEN_HEADER];
