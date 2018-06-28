@@ -86,6 +86,7 @@ app.post("/weatherbot", function(req, res) {
     return;
   }
 
+  console.log("DEBUG: setting up variables");
 
   const spaceId = body.spaceId;
 
@@ -101,19 +102,20 @@ app.post("/weatherbot", function(req, res) {
   msgTitle = "Annotation is ===";
   msgText = annotationType;
 	
-
+  console.log("DEBUG: checking for weather request");
 	
   var operationWeather = "no weather";	 
   if (annotationType === "message-focus") {
+	console.log("DEBUG: message-focus");
   	var actions = annotationPayload.actions;
 	if ( actions[0] === "GET_CURRENT_WEATHER" && annotationPayload.confidence > 0.50)
 		operationWeather = "WEATHER";
 	else if ( actions[0] === "GET_FORECAST" && annotationPayload.confidence > 0.50)
 		operationWeather = "FORECAST";
   }
-
+	
   msgText = operationWeather + 	" " + msgText;
-
+  console.log("DEBUG: and we're getting -- " + msgText);
 
   //if (annotationType === "message-nlp-docSentiment") {
   //  var docSentiment = annotationPayload.docSentiment;
