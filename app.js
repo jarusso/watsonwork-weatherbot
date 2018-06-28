@@ -100,6 +100,20 @@ app.post("/weatherbot", function(req, res) {
 	
   msgTitle = "Annotation is ===";
   msgText = annotationType;
+	
+
+	
+  var operationWeather = "no weather";	 
+  if (annotationType === "message-focus") {
+  	var actions = annotationPayload.actions;
+	if ( actions[0] === "GET_CURRENT_WEATHER" && annotationPayload.confidence > 0.50)
+		operationWeather = "WEATHER";
+	else if ( actions[0] === "GET_FORECAST" && annotationPayload.confidence > 0.50)
+		operationWeather = "FORECAST";
+  }
+
+  msgText = operationWeather + 	" " + msgText;
+
 
   //if (annotationType === "message-nlp-docSentiment") {
   //  var docSentiment = annotationPayload.docSentiment;
@@ -161,7 +175,7 @@ app.post("/weatherbot", function(req, res) {
           var person = bodyParsed.data.message.createdBy;
 					memberId = person.id;
           memberName = person.displayName;
-          msgText = memberName + msgText;
+          msgText = memberName + " -- " + msgText;
 
       } else {
           console.log("ERROR: Can't retrieve " + GraphQLOptions.body + " status:" + response.statusCode);
