@@ -1,7 +1,7 @@
-# watsonwork-sentiment analyzer
-**Writes a message back if there is someone with very negative or very positive comments**
+# watsonwork-weatherbot
+**uses watson assistant to have custom action fulfillment around weather**
 
-[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/jarusso/watsonwork-sentiment&branch=master)
+[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/jarusso/watsonwork-weatherbot&branch=master)
 
 ### Demonstrates the following specific Watson Work Services capabilities
 
