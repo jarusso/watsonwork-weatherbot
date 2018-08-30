@@ -49,8 +49,6 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 app.post("/weatherbot", function(req, res) {
-  
-  console.log("######## got a callback ########");
 
   if (!APP_ID || !APP_SECRET || !WEBHOOK_SECRET) {
   	console.log("ERROR: Missing variables APP_ID, APP_SECRET or WEBHOOK_SECRET from environment");
@@ -86,8 +84,6 @@ app.post("/weatherbot", function(req, res) {
     return;
   }
 
-  console.log("DEBUG: setting up variables");
-
   const spaceId = body.spaceId;
 
   var msgTitle = "";
@@ -98,40 +94,62 @@ app.post("/weatherbot", function(req, res) {
   const annotationType = body.annotationType;
   var messageId = body.messageId;
   var annotationPayload = JSON.parse(body.annotationPayload);
-	
+
   msgTitle = "Annotation is ===";
   msgText = annotationType;
-	
-  console.log("DEBUG: checking for weather request");
-	
-  var operationWeather = "no weather";	 
-  if (annotationType === "message-focus") {
-	console.log("DEBUG: message-focus");
-  	var actions = annotationPayload.actions;
-	if ( actions[0] === "GET_CURRENT_WEATHER" && annotationPayload.confidence > 0.50)
-		operationWeather = "WEATHER";
-	else if ( actions[0] === "GET_FORECAST" && annotationPayload.confidence > 0.50)
-		operationWeather = "FORECAST";
-  }
-	
-  msgText = operationWeather + 	" " + msgText;
-  console.log("DEBUG: and we're getting -- " + msgText);
 
-  //if (annotationType === "message-nlp-docSentiment") {
-  //  var docSentiment = annotationPayload.docSentiment;
-  //  msgTitle = "Sentiment Analysis";
-  //  if (docSentiment.type === "negative" && docSentiment.score < -0.50) {
-  //    msgText = " is being " + negativeTerm() + " (" + docSentiment.score + ")";
-  //  } else if (docSentiment.type === "positive" && docSentiment.score > 0.50) {
-  //    msgText = " is being " + positiveTerm() + " (" + docSentiment.score + ")";
-  //  } else {
-      // If the person is neither happy nor sad then assume neutral and just return
-  //    msgText = " is neutral " + " (" + docSentiment.score + ")";
-  //  }
-  //} else {
-      // Skip analysis we are not interested in
-      //return;
-  //}
+  var operationWeather = "no weather";
+  var doWeather = false;
+  var fetchOperation = "none";
+  
+  
+  var actionId = annotationPayload.actionId;
+  if (annotationType === "actionSelected") {
+    	if ( actionId === "GET_WEATHER")
+    	{
+    		operationWeather = "WEATHER";
+    		doWeather = true;
+    		fetchOperation = "get";
+    	}
+    	else if ( actionId === "GET_FORECAST")
+    	{
+    		operationWeather = "FORECAST";
+    		doWeather = true;
+    		fetchOperation = "get";
+    	}
+    	else if ( actionId === "SHARE_WEATHER")
+    	{
+    		operationWeather = "WEATHER";
+    		doWeather = true;
+    		fetchOperation = "share";
+    	}
+    	else if ( actionId === "SHARE_FORECAST")
+    	{
+    		operationWeather = "FORECAST";
+    		doWeather = true;
+    		fetchOperation = "share";
+    	}
+  }
+
+  if (!doWeather)
+  {
+            return;
+  }
+
+  console.log("performing an operation: " + operationWeather + " operation type: " + fetchOperation);
+
+  msgText = operationWeather + 	" " + msgText;
+
+  var userId = "";
+  var userName = "";
+  var dialogId = "";
+  var conversationId = "";
+
+  userId = body.userId;
+  userName = body.userName;
+  dialogId = annotationPayload.targetDialogId;
+  conversationId = annotationPayload.conversationId;
+  actionId = annotationPayload.actionId;
 
   // Build request options for authentication.
   const authenticationOptions = {
@@ -160,33 +178,183 @@ app.post("/weatherbot", function(req, res) {
         "url": `${WWS_URL}/graphql`,
         "headers": {
             "Content-Type": "application/graphql",
-            "x-graphql-view": "PUBLIC",
+            "x-graphql-view": "PUBLIC, BETA",
             "jwt": "${jwt}"
         },
         "method": "POST",
         "body": ""
     };
 
-    GraphQLOptions.headers.jwt = accessToken;
-    GraphQLOptions.body = "{ message (id: \"" + messageId + "\") {createdBy { displayName id}}}";
 
-    request(GraphQLOptions, function(err, response, graphqlbody) {
+    if ( fetchOperation === "get")
+    {
+        createCard ( accessToken, conversationId, userId, dialogId, operationWeather);
+    }
+    else if (( fetchOperation === "share") && ( operationWeather === "WEATHER"))
+    {
+        msgTitle = "Current Weather";
 
-      if (!err && response.statusCode === 200) {
+        var weather = {
+            "method": "POST",
+            "url": "http://api.apixu.com/v1/current.json?key=ac3602719a174e24a3c200054182806&q=Boston"
+        };
+
+
+
+        // post weather
+        var weatherBody = "";
+        request(weather, function(err, response, weatherBody) {
+
+            if (!err && response.statusCode === 200) {
+                  var weatherParsed = JSON.parse(weatherBody);
+                  msgText = "Temp is " + weatherParsed.current.temp_f + " " + weatherParsed.current.condition.text + " humidity is " + weatherParsed.current.humidity + " feels like " + weatherParsed.current.feelslike_f;
+                  processWeather (spaceId, accessToken, msgTitle, msgText);
+                  clearCard( accessToken, conversationId, userId, dialogId );
+            } else {
+                return;
+            }});
+    }
+    else if (( fetchOperation === "share") && ( operationWeather === "FORECAST"))
+    {
+        msgTitle = "Current Forecast";
+        var weather = {
+            "method": "POST",
+            "url": "http://api.apixu.com/v1/forecast.json?key=ac3602719a174e24a3c200054182806&q=Boston&days=5"
+        };
+        var weatherBody = "";
+
+
+        request(weather, function(err, response, weatherBody) {
+
+            if (!err && response.statusCode === 200) {
+                  var weatherParsed = JSON.parse(weatherBody);
+                  msgText = "";
+                  for (i = 0; i < 5; i++)
+                  {
+                      msgText += " High " + weatherParsed.forecast.forecastday[i].day.maxtemp_f;
+                      msgText += " Low " + weatherParsed.forecast.forecastday[i].day.mintemp_f;
+                      msgText += "  " + weatherParsed.forecast.forecastday[i].day.condition.text;
+                      if ( i < 4)
+                        msgText += " \n " ;
+                  }
+                  processWeather (spaceId, accessToken, msgTitle, msgText);
+                  clearCard( accessToken, conversationId, userId, dialogId );
+            } else {
+                return;
+            }});
+
+    }
+    });
+  });
+  
+function createCard ( accessToken, conversationId, userId, dialogId, operationWeather)
+{
+    const createGraphQLOptions = {
+        "url": `${WWS_URL}/graphql`,
+        "headers": {
+            "Content-Type": "application/graphql",
+            "x-graphql-view": "PUBLIC, BETA",
+            "jwt": "${jwt}"
+        },
+        "method": "POST",
+        "body": ""
+    };
+        createGraphQLOptions.headers.jwt = accessToken;
+
+        createGraphQLOptions.body = 'mutation {';
+        createGraphQLOptions.body += 'createTargetedMessage(input: {';
+        createGraphQLOptions.body += 'conversationId: "' + conversationId + '",';
+        createGraphQLOptions.body += 'targetUserId: "' + userId + '",';
+        createGraphQLOptions.body += 'targetDialogId: "' + dialogId + '",';
+        createGraphQLOptions.body += 'attachments: [';
+        createGraphQLOptions.body += '{';
+        createGraphQLOptions.body += 'type: CARD,';
+        createGraphQLOptions.body += 'cardInput: {';
+        createGraphQLOptions.body += 'type: INFORMATION,';
+        createGraphQLOptions.body += 'informationCardInput: {'
+        createGraphQLOptions.body += 'title: "' + operationWeather + '",';
+        createGraphQLOptions.body += 'subtitle: "",';
+        createGraphQLOptions.body += 'text: "' + operationWeather + '",';
+        createGraphQLOptions.body += 'date: 1500573338000,';
+        createGraphQLOptions.body += 'buttons: [';
+        createGraphQLOptions.body += '{';
+        createGraphQLOptions.body += 'text: "Share the ' + operationWeather.toLowerCase() + '",';
+        createGraphQLOptions.body += 'payload: "SHARE_' + operationWeather + '",';
+        createGraphQLOptions.body += 'style: PRIMARY';
+        createGraphQLOptions.body += '}';
+        createGraphQLOptions.body += ']';
+        createGraphQLOptions.body += '}';
+        createGraphQLOptions.body += '}';
+        createGraphQLOptions.body += '}';
+        createGraphQLOptions.body += ']';
+        createGraphQLOptions.body += '}) {';
+        createGraphQLOptions.body += 'successful';
+        createGraphQLOptions.body += '}';
+        createGraphQLOptions.body += '};';
+
+        request(createGraphQLOptions, function(err, response, graphqlbody) {
+
+
+        if (!err && response.statusCode === 200) {
           const bodyParsed = JSON.parse(graphqlbody);
-          var person = bodyParsed.data.message.createdBy;
-					memberId = person.id;
-          memberName = person.displayName;
-          msgText = memberName + " -- " + msgText;
 
-      } else {
-          console.log("ERROR: Can't retrieve " + GraphQLOptions.body + " status:" + response.statusCode);
+        } else {
+          console.log("ERROR: Can't retrieve " + createGraphQLOptions.body + " status:" + response.statusCode);
           return;
-      }
+        }});
+    
+}
 
-      // Avoid endless loop of analysis :-)
-			if (memberId !== APP_ID) {
-        const appMessage = {
+
+function clearCard( accessToken, conversationId, userId, dialogId) {
+    // graphQL object
+    const localGraphQLOptions = {
+        "url": `${WWS_URL}/graphql`,
+        "headers": {
+            "Content-Type": "application/graphql",
+            "x-graphql-view": "PUBLIC, BETA",
+            "jwt": "${jwt}"
+        },
+        "method": "POST",
+        "body": ""
+    };
+    localGraphQLOptions.headers.jwt = accessToken;
+
+    localGraphQLOptions.body = 'mutation {';
+    localGraphQLOptions.body += 'createTargetedMessage(input: {';
+    localGraphQLOptions.body += 'conversationId: "' + conversationId + '",';
+    localGraphQLOptions.body += 'targetUserId: "' + userId + '",';
+    localGraphQLOptions.body += 'targetDialogId: "' + dialogId + '",';
+    localGraphQLOptions.body += 'annotations: [';
+    localGraphQLOptions.body += '{';
+    localGraphQLOptions.body += 'genericAnnotation: {'
+    localGraphQLOptions.body += 'title: "Weather shared. Please click X to close this panel.",';
+    localGraphQLOptions.body += 'text: ""';
+    localGraphQLOptions.body += '}}';
+    localGraphQLOptions.body += ']';
+    localGraphQLOptions.body += '}) {';
+    localGraphQLOptions.body += 'successful';
+    localGraphQLOptions.body += '}';
+    localGraphQLOptions.body += '};';
+
+
+    request(localGraphQLOptions, function(err, response, graphqlbody) {
+
+
+        if (!err && response.statusCode === 200) {
+          const bodyParsed = JSON.parse(graphqlbody);
+
+        } else {
+          console.log("ERROR: Can't retrieve " + localGraphQLOptions.body + " status:" + response.statusCode);
+          return;
+        }});
+
+}
+
+
+
+function processWeather(spaceId, accessToken, msgTitle, msgText) {
+    const appMessage = {
             "type": "appMessage",
             "version": "1",
             "annotations": [{
@@ -200,35 +368,30 @@ app.post("/weatherbot", function(req, res) {
         };
 
         const sendMessageOptions = {
-            "url": "https://api.watsonwork.ibm.com/v1/spaces/${space_id}/messages",
-            "headers": {
-                "Content-Type": "application/json",
-                "jwt": ""
-            },
-            "method": "POST",
-            "body": ""
-        };
+                "url": "https://api.watsonwork.ibm.com/v1/spaces/${space_id}/messages",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "jwt": ""
+                },
+                "method": "POST",
+                "body": ""
+            };
 
-        sendMessageOptions.url = sendMessageOptions.url.replace("${space_id}", spaceId);
-        sendMessageOptions.headers.jwt = accessToken;
-        appMessage.annotations[0].title = msgTitle;
-        appMessage.annotations[0].text = msgText;
-        sendMessageOptions.body = JSON.stringify(appMessage);
+            sendMessageOptions.url = sendMessageOptions.url.replace("${space_id}", spaceId);
+            sendMessageOptions.headers.jwt = accessToken;
+            appMessage.annotations[0].title = msgTitle;
+            appMessage.annotations[0].text = msgText;
+            sendMessageOptions.body = JSON.stringify(appMessage);
 
-        request(sendMessageOptions, function(err, response, sendMessageBody) {
+            request(sendMessageOptions, function(err, response, sendMessageBody) {
 
-          if (err || response.statusCode !== 201) {
-              console.log("ERROR: Posting to " + sendMessageOptions.url + "resulted on http status code: " + response.statusCode + " and error " + err);
-          }
+              if (err || response.statusCode !== 201) {
+                  console.log("ERROR: Posting to " + sendMessageOptions.url + "resulted on http status code: " + response.statusCode + " and error " + err);
+              }
 
-        });
-      }
-      else {
-        console.log("INFO: Skipping sending a message of analysis of our own message " + JSON.stringify(body));
-      }
-    });
-  });
-});
+            });
+
+}
 
 function verifySender(headers, rawbody) {
     var headerToken = headers[WEBHOOK_VERIFICATION_TOKEN_HEADER];
