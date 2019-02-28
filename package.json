@@ -1,9 +1,9 @@
-{
+2{
 	"name": "weatherbotj",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"start": "node app.js"
+		"start": "node jrServer2.js"
 	},
 	"dependencies": {
 		"express": "4.13.x",
